@@ -23,24 +23,61 @@
         .button:hover {
             background-color: #45a049;
         }
+        .button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 8px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 8px solid #3498db;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>PDF to Excel Converter</h1>
         <form id="uploadForm" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required />
-            <button type="submit" class="button">Конвертировать</button>
+            <input type="file" id="fileInput" name="file" accept=".pdf" required />
+            <button type="submit" id="submitButton" class="button" disabled>Convert</button>
         </form>
+        <div class="loader" id="loader"></div>
         <p id="message"></p>
     </div>
 
     <script>
         const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const submitButton = document.getElementById('submitButton');
+        const loader = document.getElementById('loader');
         const message = document.getElementById('message');
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0 && fileInput.files[0].type === 'application/pdf') {
+                submitButton.disabled = false;
+                message.textContent = '';
+            } else {
+                submitButton.disabled = true;
+                message.textContent = 'Please select a valid PDF file.';
+                message.style.color = 'red';
+            }
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            submitButton.disabled = true;
+            loader.style.display = 'block';
+            message.textContent = '';
+
             const formData = new FormData(form);
 
             try {
@@ -54,18 +91,21 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'output.xlsx';
+                    a.download = fileInput.files[0].name.replace('.pdf', '.xlsx');
                     a.click();
-                    message.textContent = 'Файл конвертрован успешно!';
+                    message.textContent = 'Файл успешно конвертирован!';
                     message.style.color = 'green';
                 } else {
                     const error = await response.json();
-                    message.textContent = `Error: ${error.error}`;
+                    message.textContent = `Ошибка: ${error.error}`;
                     message.style.color = 'red';
                 }
             } catch (error) {
-                message.textContent = `Error: ${error.message}`;
+                message.textContent = `Ошибка: ${error.message}`;
                 message.style.color = 'red';
+            } finally {
+                submitButton.disabled = false;
+                loader.style.display = 'none';
             }
         });
     </script>
